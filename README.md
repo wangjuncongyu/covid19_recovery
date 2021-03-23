@@ -14,7 +14,7 @@ tensorflow projects for recovery-time prediction of COVID-19
 ## Training
 
 ``` bash
-(1) prepare your data (see the 50 data subjects for examples).
+(1) prepare your data (see the eval_sets.csv for examples).
 (2) cd trainers and run the file: run_train.bat.
 Note: you may need to modify the configs/cfgs.py file:changing cfg.data_set to the directory of your dataset.
 ```
