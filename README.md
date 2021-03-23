@@ -7,8 +7,6 @@ tensorflow projects for recovery-time prediction of COVID-19
 - Anaconda python 3.7.3 Win10
 - Tensorflow 2.0.0 with GPU
 
-## network architecture (see achitecture.pptx)
-
 
 #if you have any problem, please feel free to ask questions via sending email to wjcy19870122@sjtu.edu.cn
 ## Training
