@@ -187,7 +187,7 @@ def main(args):
             
             #training one epoch with pre-defined steps
             for step in range(args.nsteps_per_epoch):
-                bt_patientinfo, bt_treatinfo, bt_ims, bt_treatment_days, bt_event_indicator, bt_severity, _ = train_data_generator.next_batch(args.batch_size)                
+                bt_patientinfo, bt_treatinfo, bt_ims, bt_treatment_days, bt_event_indicator, bt_severity = train_data_generator.next_batch(args.batch_size)                
             
                 if args.gt_treatment==0:
                     feed_treatinfo= tf.zeros_like(bt_treatinfo)
@@ -232,7 +232,7 @@ def main(args):
             eval_event_indicators = []
             eval_gt_severitys = []
             for step in range(eval_sample_num//(args.batch_size)):
-                evbt_painfo, evbt_treatinfo, evbt_ims, evbt_treatment_days, evbt_event_indicator, evbt_severity, _ = val_data_generator.next_batch(args.batch_size)
+                evbt_painfo, evbt_treatinfo, evbt_ims, evbt_treatment_days, evbt_event_indicator, evbt_severity = val_data_generator.next_batch(args.batch_size)
                 if args.gt_treatment==0:
                     feed_treatinfo= tf.zeros_like(evbt_treatinfo)
                 else:
@@ -245,7 +245,8 @@ def main(args):
                
                 feed = [feed_treatinfo, feed_ims, evbt_painfo]
                 
-                risk_preds = model(feed, training=False)                
+                risk_preds = model(feed, training=False)
+                
              
                 eval_risk_reg_preds.append(risk_preds)
                 eval_treatment_days.append(evbt_treatment_days)
@@ -280,7 +281,8 @@ def main(args):
                      eval_cured_loss, eval_dead_loss, eval_censored_loss, eval_rank_loss, mean_day_distance)) 
             
             
-            
+            tf.summary.scalar('train_loss', mean_risk_reg_cured_loss+mean_risk_reg_dead_loss+mean_risk_reg_censored_loss+mean_risk_reg_rank_loss, step = (epoch+1))
+            tf.summary.scalar('eval_loss', eval_cured_loss+eval_dead_loss+eval_censored_loss+eval_rank_loss, step = (epoch+1))
             #eval_total_loss = eval_severity_cls_loss + eval_cured_loss + eval_censored_loss + eval_dead_loss + eval_rank_loss
             if  mean_day_distance<=min_eval_loss:             
                 min_eval_loss = mean_day_distance
