@@ -23,25 +23,25 @@ class RiskPredictor(object):
         Create session and Loading models and weights from disk. You have to call this func before
         calling classify
         '''
-        model_withouttreatment_dir = osp.join(self.cfg.CHECKPOINTS_ROOT, '1;2;3;4;5_modelweights_WithoutTreatment')
+        model_withouttreatment_dir = osp.join(self.cfg.CHECKPOINTS_ROOT, 'fold1_notreat_im')
         assert osp.exists(model_withouttreatment_dir), 'no model dir found:' + model_withouttreatment_dir  
         
-        model_withtreatment_dir = osp.join(self.cfg.CHECKPOINTS_ROOT, '1;2;3;4;5_modelweights_WithTreatment')
+        model_withtreatment_dir = osp.join(self.cfg.CHECKPOINTS_ROOT, 'fold1_treat_im')
         assert osp.exists(model_withtreatment_dir), 'no model dir found:' + model_withtreatment_dir  
         try:        
-            self.model_withouttreat = build_network([self.cfg.treatment_infosize, self.cfg.im_feedsize, self.cfg.patient_infosize], [self.cfg.severity_categories, self.cfg.time_range], False, name='risk_predictor')
+            self.model_withouttreat = build_network([self.cfg.treatment_infosize, self.cfg.im_feedsize, self.cfg.patient_infosize], [self.cfg.time_range], False, name='risk_predictor')
             checkpoint_file = find_weights_of_last(model_withouttreatment_dir, 'risk_predictor')            
             print (checkpoint_file)
             assert osp.exists(checkpoint_file), 'no checkpoint found:' + checkpoint_file
             self.model_withouttreat.load_weights(checkpoint_file)
             
-            self.model_withtreat = build_network([self.cfg.treatment_infosize, self.cfg.im_feedsize, self.cfg.patient_infosize], [self.cfg.severity_categories, self.cfg.time_range], False, name='risk_predictor')
+            self.model_withtreat = build_network([self.cfg.treatment_infosize, self.cfg.im_feedsize, self.cfg.patient_infosize], [self.cfg.time_range], False, name='risk_predictor')
             checkpoint_file = find_weights_of_last(model_withtreatment_dir, 'risk_predictor')            
             print (checkpoint_file)
             assert osp.exists(checkpoint_file), 'no checkpoint found:' + checkpoint_file
             self.model_withtreat.load_weights(checkpoint_file)
             
-            feature_idx = [23, 34, 35]
+            feature_idx = [46, 58]
             outputs = [self.model_withouttreat.layers[i].output for i in feature_idx]
             self.model_withouttreat = KM.Model(inputs=self.model_withouttreat.inputs, outputs=outputs)    
             
@@ -65,11 +65,11 @@ class RiskPredictor(object):
         feed = [np.float32(treatment_scheme), np.float32(ct_scan), np.float32(patient_info)]
         
         if np.sum(treatment_scheme>0) == 0:
-            coff, cls_pred, reg_pred = self.model_withouttreat(feed, training=False)
+            coff, reg_pred = self.model_withouttreat(feed, training=False)
         else:
             print('##################')
-            coff, cls_pred, reg_pred = self.model_withtreat(feed, training=False)
-        return np.array(coff), np.array(cls_pred), np.array(reg_pred)
+            coff, reg_pred = self.model_withtreat(feed, training=False)
+        return np.array(coff), np.array(reg_pred)
         
             
     def _record_error(self, error):

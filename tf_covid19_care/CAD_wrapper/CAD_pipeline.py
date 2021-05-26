@@ -53,7 +53,7 @@ class CAD_Pipeline(object):
             self.patient_infominv = np.load('../checkpoints/feature_minv.npy', allow_pickle=True)
             
         else:
-            self.patient_infominv = np.min(self.patients[:, 1:50], axis=0)
+            self.patient_infominv = np.min(self.patients[:, 1:48], axis=0)
         self.patient_infominv[1] = 1
         
         if osp.exists('../checkpoints/feature_maxv.npy'):
@@ -61,7 +61,7 @@ class CAD_Pipeline(object):
             self.patient_infomaxv = np.load('../checkpoints/feature_maxv.npy', allow_pickle=True)
            
         else:
-            self.patient_infomaxv = np.max(self.patients[:, 1:50], axis=0)
+            self.patient_infomaxv = np.max(self.patients[:, 1:48], axis=0)
         self.patient_infomaxv[1] = 100
         
         self.patient_infominv = np.delete(self.patient_infominv, 2, axis=0)
@@ -103,17 +103,16 @@ class CAD_Pipeline(object):
                 feed_volume = np.zeros([1]+risk_cfg.im_feedsize+ [1], dtype=np.float32)
          
             
-            feature_significane_coff, cls_pred, reg_pred = self.risk_predictor.predict(treatments,feed_volume, clinicals)
+            feature_significane_coff, reg_pred = self.risk_predictor.predict(treatments,feed_volume, clinicals)
             feature_significane_coff = feature_significane_coff[0,...]
-            cls_pred = cls_pred[0,...]
+           
             reg_pred = reg_pred[0,...]
             if feature_significane_coff is None:
                 return False
             
-            np.save(osp.join(patient_root, 'predictions.npy'),np.array([cls_pred[1], np.sum(reg_pred[0:7]), np.sum(reg_pred[0:14]), \
-                             np.sum(reg_pred[0:21]), np.sum(reg_pred[0:28])], dtype=np.float32))
+            np.save(osp.join(patient_root, 'predictions.npy'), reg_pred)
     
-            self._generate_figures(patient_root, keep, feature_significane_coff, cls_pred, reg_pred)
+            self._generate_figures(patient_root, keep, feature_significane_coff, reg_pred)
             return True
         except Exception as e:
             self._record_error_info(str(e))
@@ -162,7 +161,7 @@ class CAD_Pipeline(object):
             self._record_error_info(str(e))                        
             return None
     
-    def _generate_figures(self, save_path, keep, coff, cls_pred, reg_pred):
+    def _generate_figures(self, save_path, keep, coff, reg_pred):
         font={'family':'Arial',
               'style':'normal',
               'weight':'light',
@@ -172,7 +171,7 @@ class CAD_Pipeline(object):
         
         plt.figure()
         #colors = ['#7281a7', '#af97ba', '#ef626c', '#ef626c']
-        if cls_pred[1]>=0.5 or reg_pred[-1]>0.5:
+        if reg_pred[-1]>0.5:
             color = 'red'
         else:
             color = 'green'
