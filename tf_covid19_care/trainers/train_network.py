@@ -32,6 +32,7 @@ parser.add_argument('-batch_size', '--batch_size', help='the mini-batch size.', 
 parser.add_argument('-cuda_device', '--cuda_device', help='runining on specified gpu', type = int, default = 0)
 parser.add_argument('-gt_treatment', '--gt_treatment', help='using treatment or not.', type = int, default = 0)#1:yes 0:no
 parser.add_argument('-gt_ctimages', '--gt_ctimages', help='using ctimages or not.', type = int, default = 1)#1:yes 0:no
+parser.add_argument('-model_path', '--model_path', help='the path saving model.', type = str, default ='icovid_treat_im')
 
 def build_idx_for_rankloss(bt_treatment_days, censor_indicator):
     '''
@@ -148,22 +149,16 @@ def main(args):
     val_data_generator = DataGenerator(eval_files, cfg, train_mode=False)
     eval_sample_num = val_data_generator.load_dataset()
    
-    treattype = {0:'WithoutTreatment', 1:'WithTreatment'}
-    imagetype = {0:'Withoutimage', 1:''}
-    if args.gt_ctimages==1:
-        model_dir_name = args.train_subsets +'_modelweights_'+ treattype[args.gt_treatment]
-    else:
-        model_dir_name = args.train_subsets +'_modelweights_'+ treattype[args.gt_treatment]+'_'+imagetype[args.gt_ctimages]
    
-    model_dir = os.path.join(cfg.CHECKPOINTS_ROOT, model_dir_name)
-    
+    model_dir = os.path.join(cfg.CHECKPOINTS_ROOT, args.model_path)
+   
     if not os.path.exists(model_dir):
         os.mkdir(model_dir)
   
     model = build_network([cfg.treatment_infosize, cfg.im_feedsize, cfg.patient_infosize], [cfg.time_range], True, name='risk_predictor')
     
     if args.load_pretrain !=0:
-        checkpoint_file = find_weights_of_last(os.path.join(cfg.CHECKPOINTS_ROOT, model_dir_name), 'risk_predictor')
+        checkpoint_file = find_weights_of_last(os.path.join(cfg.CHECKPOINTS_ROOT, args.model_path), 'risk_predictor')
         if checkpoint_file != '':  
             print ('loading pretrained from ', checkpoint_file)
             model.load_weights(checkpoint_file)
@@ -187,7 +182,7 @@ def main(args):
             
             #training one epoch with pre-defined steps
             for step in range(args.nsteps_per_epoch):
-                bt_patientinfo, bt_treatinfo, bt_ims, bt_treatment_days, bt_event_indicator, bt_severity = train_data_generator.next_batch(args.batch_size)                
+                bt_patientinfo, bt_treatinfo, bt_ims, bt_treatment_days, bt_event_indicator, bt_severity, _ = train_data_generator.next_batch(args.batch_size)                
             
                 if args.gt_treatment==0:
                     feed_treatinfo= tf.zeros_like(bt_treatinfo)
@@ -232,7 +227,7 @@ def main(args):
             eval_event_indicators = []
             eval_gt_severitys = []
             for step in range(eval_sample_num//(args.batch_size)):
-                evbt_painfo, evbt_treatinfo, evbt_ims, evbt_treatment_days, evbt_event_indicator, evbt_severity = val_data_generator.next_batch(args.batch_size)
+                evbt_painfo, evbt_treatinfo, evbt_ims, evbt_treatment_days, evbt_event_indicator, evbt_severity, _ = val_data_generator.next_batch(args.batch_size)
                 if args.gt_treatment==0:
                     feed_treatinfo= tf.zeros_like(evbt_treatinfo)
                 else:
