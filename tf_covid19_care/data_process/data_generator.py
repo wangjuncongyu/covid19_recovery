@@ -91,6 +91,9 @@ class DataGenerator(object):
                 continue
             
             patient_info = patient[1:48]
+            if not osp.exists('clinical_features.npy'):
+                np.save('clinical_features.npy', np.delete(patient_info.copy(), 2, axis=0))
+                np.save('treatments.npy',patient[48:67] )
             #normalize the information
             patient_info = (patient_info-self.patient_infominv)/(self.patient_infomaxv-self.patient_infominv+10e-5)
             bt_severity.append(patient[3])
@@ -106,9 +109,10 @@ class DataGenerator(object):
             bt_treatment_scheme.append(patient[48:67])
             bt_treatment_days.append(patient[67])
             bt_event_indicator.append(patient[68])
-            im_file = osp.join(self.datset_root, 'ct_images', patient[69])
+            im_file = osp.join(self.cfg.im_path, patient[69])
             
             if osp.exists(im_file): 
+                #print(im_file)
                 #im_data = resize(hu2gray(np.load(im_file),WL=-500, WW=1200), self.cfg.im_feedsize)
                 im_data = np.load(im_file)
                 if self.train_mode:
@@ -147,7 +151,7 @@ class DataGenerator(object):
             self.current_idx = 0
             np.random.shuffle(self.samples_idx)            
        
-        return bt_painfo, bt_treatment_scheme, bt_ims, bt_treatment_days, bt_event_indicator, bt_severity, bt_pids
+        return bt_painfo, bt_treatment_scheme, bt_ims, bt_treatment_days, bt_event_indicator, bt_severity, bt_pids  
   
     
     #=========== private function of augmnet CT images======================
